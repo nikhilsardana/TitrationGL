@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>Collisions - Physijs</title>
+	<link rel="shortcut icon" href="../favicon.ico">
+	<link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" type="text/css" href="css/normalize.css" />
+	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.2.0/css/font-awesome.min.css" />
+	<link rel="stylesheet" type="text/css" href="css/demo.css" />
+	<link rel="stylesheet" type="text/css" href="css/set1.css" />
+	<link rel="stylesheet" type="text/css" href="css/cs-select.css" />
+	<link rel="stylesheet" type="text/css" href="css/cs-skin-elastic.css" />
+
+	<script type="text/javascript" src="js/Tween.js"></script>
+	<script type="text/javascript" src="js/three.js"></script>
+	<script type="text/javascript" src="js/physi.js"></script>
+	<script src="js/OrbitControls.js"></script>
+	<script type="text/javascript">
+
+	'use strict';
+
+	Physijs.scripts.worker = 'http://localhost:8080/js/physijs_worker.js';
+	Physijs.scripts.ammo = 'http://localhost:8080/js/ammo.js';
+
+	var initScene, render, _boxes = [], spawnBox, spawnSphere, deleteSphere, loader, createSphere,
+		renderer, render_stats, physics_stats, scene, scene2, scene3, ground_material, ground, light, camera, camera2, camera3, controls, materialA,
+		fluid1geometry, fluid1, cylinderGeometry, cylinder, clicked, tween, tweenBack, waitTime, rate, multiplier;
+	initScene = function() {
+		renderer = new THREE.WebGLRenderer({ antialias: true });
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.shadowMap.enabled = true;
+		renderer.shadowMapSoft = true;
+		renderer.autoClear = false;
+		renderer.setClearColor(0xFAFAFA, 1);
+		document.getElementById( 'viewport' ).appendChild( renderer.domElement );
+
+		//render_stats = new Stats();
+		//render_stats.domElement.style.position = 'absolute';
+		//render_stats.domElement.style.top = '0px';
+		//render_stats.domElement.style.zIndex = 100;
+		//document.getElementById( 'viewport' ).appendChild( render_stats.domElement );
+
+		//physics_stats = new Stats();
+		//physics_stats.domElement.style.position = 'absolute';
+		//physics_stats.domElement.style.top = '50px';
+		//physics_stats.domElement.style.zIndex = 100;
+		//document.getElementById( 'viewport' ).appendChild( physics_stats.domElement );
+
+		scene = new Physijs.Scene;
+		scene2 = new THREE.Scene();
+		scene3 = new THREE.Scene();
+		scene.setGravity(new THREE.Vector3( 0, -30, 0 ));
+		rate = 0;
+		clicked = false;
+		waitTime = 400;
+		multiplier = 1;
+		document.getElementById('target').addEventListener('click', function() {
+			rate+=1;
+			if(rate==1) {
+				try {
+					tween.start();
+					spawnSphere();
+				} catch (e) {
+					//console.log("can't tween" + e);
+				}
+			}
+				//console.log(clicked);
+		}, false);
+
+		document.getElementById('target2').addEventListener('click', function() {
+				if(rate>=1) {
+					rate-=1;
+				}
+				if(rate==0) {
+					try {
+						tweenBack.start();
+					} catch (e) {
+						//console.log("can't tweenBack" + e);
+					}
+				}
+				//console.log(clicked);
+		}, false);
+
+		camera = new THREE.PerspectiveCamera(
+			35,
+			window.innerWidth / window.innerHeight,
+			1,
+			1000
+		);
+		camera.position.set( 60, 50, 60 );
+		camera.lookAt( scene.position );
+		scene.add( camera );
+
+		window.addEventListener('resize', function() {
+				var WIDTH = window.innerWidth;
+				var HEIGHT = window.innerHeight;
+				renderer.setSize(WIDTH, HEIGHT);
+				camera.aspect = WIDTH / HEIGHT;
+				camera.updateProjectionMatrix();
+		});
+		//********************Light****************************
+		light = new THREE.DirectionalLight( 0xFFFFFF );
+		light.position.set(500, 200, 0 );
+		light.target.position.copy( scene.position );
+		light.castShadow = true;
+		light.shadowCameraLeft = -60;
+		light.shadowCameraTop = -60;
+		light.shadowCameraRight = 60;
+		light.shadowCameraBottom = 60;
+		light.shadowCameraNear = 20;
+		light.shadowCameraFar = 200;
+		light.shadowBias = -.0001
+		light.shadowMapWidth = light.shadowMapHeight = 2048;
+		light.shadowDarkness = .7;
+		scene.add(light);
+
+		var light2 = new THREE.DirectionalLight( 0xFFFFFF );
+		light2.position.set(-200, 200, 0 );
+		light2.target.position.copy( scene.position );
+		light2.castShadow = true;
+		light2.shadowCameraLeft = -60;
+		light2.shadowCameraTop = -60;
+		light2.shadowCameraRight = 60;
+		light2.shadowCameraBottom = 60;
+		light2.shadowCameraNear = 20;
+		light2.shadowCameraFar = 200;
+		light2.shadowBias = -.0001
+		light2.shadowMapWidth = light.shadowMapHeight = 2048;
+		light2.shadowDarkness = .7;
+		scene.add( light2 );
+
+		var light3 = new THREE.DirectionalLight( 0xFFFFFF );
+		light3.position.set(-100, -200, 100 );
+		light3.target.position.copy( scene.position );
+		light3.castShadow = true;
+		light3.shadowCameraLeft = -60;
+		light3.shadowCameraTop = -60;
+		light3.shadowCameraRight = 60;
+		light3.shadowCameraBottom = 60;
+		light3.shadowCameraNear = 20;
+		light3.shadowCameraFar = 200;
+		light3.shadowBias = -.0001
+		light3.shadowMapWidth = light.shadowMapHeight = 2048;
+		light3.shadowDarkness = .7;
+		scene.add(light3);
+
+		var lightA = new THREE.DirectionalLight( 0xFFFFFF );
+		lightA.position.set(500, 200, 0 );
+		lightA.target.position.copy( scene.position );
+		lightA.castShadow = true;
+		lightA.shadowCameraLeft = -60;
+		lightA.shadowCameraTop = -60;
+		lightA.shadowCameraRight = 60;
+		lightA.shadowCameraBottom = 60;
+		lightA.shadowCameraNear = 20;
+		lightA.shadowCameraFar = 200;
+		lightA.shadowBias = -.0001
+		lightA.shadowMapWidth = light.shadowMapHeight = 2048;
+		lightA.shadowDarkness = .7;
+		scene3.add(lightA);
+
+		var lightB = new THREE.DirectionalLight( 0xFFFFFF );
+		lightB.position.set(-200, 200, 0 );
+		lightB.target.position.copy( scene.position );
+		lightB.castShadow = true;
+		lightB.shadowCameraLeft = -60;
+		lightB.shadowCameraTop = -60;
+		lightB.shadowCameraRight = 60;
+		lightB.shadowCameraBottom = 60;
+		lightB.shadowCameraNear = 20;
+		lightB.shadowCameraFar = 200;
+		lightB.shadowBias = -.0001
+		lightB.shadowMapWidth = light.shadowMapHeight = 2048;
+		lightB.shadowDarkness = .7;
+		scene3.add( lightB );
+
+		var lightC = new THREE.DirectionalLight( 0xFFFFFF );
+		lightC.position.set(-100, -200, 100 );
+		lightC.target.position.copy( scene.position );
+		lightC.castShadow = true;
+		lightC.shadowCameraLeft = -60;
+		lightC.shadowCameraTop = -60;
+		lightC.shadowCameraRight = 60;
+		lightC.shadowCameraBottom = 60;
+		lightC.shadowCameraNear = 20;
+		lightC.shadowCameraFar = 200;
+		lightC.shadowBias = -.0001
+		lightC.shadowMapWidth = light.shadowMapHeight = 2048;
+		lightC.shadowDarkness = .7;
+		scene3.add(lightC);
+		//*************************END LIGHT*****************************
+		// Loader
+		loader = new THREE.TextureLoader();
+
+		// Ground
+		ground_material = Physijs.createMaterial(
+			new THREE.MeshLambertMaterial({ map: loader.load( 'images/graph.png' ), transparent: true}),
+			.8, // high friction
+			.3 // low restitution
+		);
+		ground_material.opacity = 0.4;
+		ground_material.map.wrapS = ground_material.map.wrapT = THREE.RepeatWrapping;
+		ground_material.map.repeat.set( 5, 5 );
+
+		ground = new Physijs.BoxMesh(
+			new THREE.BoxGeometry(100, 1, 100),
+			ground_material,
+			0 // mass
+		);
+		var edges = new THREE.EdgesHelper( ground, 0x000000 );
+		//scene.add(edges);
+		ground.receiveShadow = true;
+		//scene.add( ground );
+		controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+
+		var helper = new THREE.GridHelper( 50, 5, 0x4CAF50, 0x9E9E9E );
+		helper.position.set(11, 0, -2.44);
+
+		scene.add( helper );
+
+		spawnBox();
+		spawnSphere();
+		scene.addEventListener(
+			'update',
+			function() {
+					document.getElementById("buret").innerHTML = document.getElementById("charles").innerHTML + "" + (50 - fluid1.scale.y*50).toFixed(2) + " mL"
+					if(fluid1.scale.y>0) {
+						try{
+							fluid1.scale.y -= 0.0000625*rate;
+							fluid1.position.y -= 0.00125*rate;
+							cylinder.scale.y+=0.0001*rate;
+							cylinder.position.y += 0.00015*rate;
+						}catch(e){
+							console.log("YO",e)
+						}
+					} else {
+						rate=0;
+					}
+
+				scene.simulate( undefined, 1 );
+				//physics_stats.update();
+			}
+		);
+		requestAnimationFrame( render );
+		scene.simulate();
+
+
+	};
+	spawnSphere = (function() {
+		var sphere_geometry = new THREE.SphereGeometry(0.25, 32, 32);
+		var sphere_material =  Physijs.createMaterial(
+			new THREE.MeshPhongMaterial( { color: 0x673AB7, transparent: true }),
+			.6,
+			.3
+		);
+
+		createSphere = function() {
+			var sphere = new Physijs.SphereMesh(sphere_geometry, sphere_material);
+			setTimeout( function() {
+				scene.remove(sphere);
+			}, 800);
+			sphere.collisions = 0;
+			sphere.position.set(11.45, 13.5, -2.44);
+			sphere.addEventListener('ready', spawnSphere);
+			scene.add(sphere);
+		};
+
+		return function() {
+			if(rate>0 && fluid1.scale.y>0) {
+				setTimeout(createSphere, waitTime/rate );
+			} else {
+				return null;
+			}
+		};
+
+	})();
+
+	spawnBox = (function() {
+		//var loader = new THREE.JSONLoader();
+		var box_geometry;
+		var buret_geometry;
+		var myLoader = new THREE.JSONLoader();
+		myLoader.load( "http://localhost:8080/beaker6.json", function(geometry, materials) {
+			box_geometry = geometry;
+			materialA = new THREE.MeshFaceMaterial(materials);
+		});
+		myLoader.load( "http://localhost:8080/buret.json", function(geometry, materials) {
+			buret_geometry = geometry;
+			//materialA = new THREE.MeshFaceMaterial(materials);
+		});
+		var handleCollision = function( collided_with, linearVelocity, angularVelocity ) {
+				switch ( ++this.collisions ) {
+
+					case 1:
+						this.material.color.setHex(0xcc8855);
+						break;
+
+					case 2:
+						this.material.color.setHex(0xbb9955);
+						break;
+
+					case 3:
+						this.material.color.setHex(0xaaaa55);
+						break;
+
+					case 4:
+						this.material.color.setHex(0x99bb55);
+						break;
+
+					case 5:
+						this.material.color.setHex(0x88cc55);
+						break;
+
+					case 6:
+						this.material.color.setHex(0x77dd55);
+						break;
+				}
+			},
+			createBox = function() {
+				var box;
+				var buret;
+				var material;
+				material = Physijs.createMaterial(
+					new THREE.MeshLambertMaterial({ map: loader.load( 'images/wood.jpg' ), transparent: true, }),
+					.6, // medium friction
+					.3 // low restitution
+				);
+				material.map.wrapS = material.map.wrapT = THREE.RepeatWrapping;
+				material.map.repeat.set( .5, .5 );
+				material.opacity = 0.8;
+				//material = new THREE.MeshLambertMaterial({ map: THREE.ImageUtils.loadTexture( 'images/rocks.jpg' ) });
+
+				box = new Physijs.ConvexMesh(
+					box_geometry,
+					material
+				);
+				box.scale.set(5, 5, 5);
+
+				box.collisions = 0;
+
+				box.position.set(
+					0,
+					6,
+					0
+				);
+
+				box.rotation.set(
+					0, 0, 0
+				);
+
+				box.castShadow = true;
+				//box.addEventListener( 'collision', handleCollision );
+				//box.addEventListener( 'ready', spawnBox );
+				//var edges = new THREE.EdgesHelper( box, 0x000000 );
+				//scene.add(edges);
+				//var outlineMaterial1 = new THREE.MeshBasicMaterial( { color: 0xff0000, side: THREE.BackSide } );
+				//var outlineMesh1 = new THREE.Mesh( box_geometry, outlineMaterial1 );
+				//outlineMesh1.position.set(0, 6, 0);
+				//outlineMesh1.scale.set(5, 5, 5);
+				//outlineMesh1.scale.multiplyScalar(1.05);
+				//scene.add( outlineMesh1 );
+
+				var highlightShape = new THREE.Mesh(box_geometry, new THREE.MeshBasicMaterial({
+					color: 0x000000,
+					depthWrite: false
+				}));
+				highlightShape.scale.set(5.05, 5.05, 5.05);
+				highlightShape.position.set(0, 6, 0);
+				//scene2.add(highlightShape);
+
+				//****************BEAKER****************
+				var highlightShape2 = new THREE.Mesh(box_geometry, new THREE.MeshPhongMaterial({ map: loader.load( 'images/white.png' ), transparent: true})
+				);
+				highlightShape2.material.opacity = 0.7;
+				highlightShape2.scale.set(5, 5, 5);
+				highlightShape2.position.set(0, 6, 0);
+				scene3.add(highlightShape2);
+				//*************END BEAKER*******************
+				//*************BURET******************
+				var buret = new THREE.Mesh(buret_geometry, new THREE.MeshPhongMaterial({ map: loader.load( 'images/white.png' ), transparent: true, })
+				);
+				buret.material.opacity = 0.8;
+				buret.scale.set(2, 2, 2);
+				buret.position.set(15, 20, -2);
+
+				scene3.add(buret);
+
+
+			 fluid1geometry = new THREE.CylinderGeometry(2.02, 2.02, 40, 32);
+				var fluid1material = new THREE.MeshPhongMaterial( {
+						color: 0x673AB7,
+						ambient: 0x673AB7,
+						transparent: true,
+				});
+				fluid1 = new THREE.Mesh(fluid1geometry, fluid1material);
+				fluid1.position.set(11.45, 47, -2.44);
+				fluid1.material.opacity = 0.8;
+				scene.add(fluid1);
+
+				var fluid2geometry = new THREE.CylinderGeometry(2.02, 0.8, 4, 32);
+				var fluid2material = new THREE.MeshPhongMaterial( {
+						color: 0x673AB7,
+						ambient: 0x673AB7,
+						transparent: true,
+				});
+				var fluid2 = new THREE.Mesh(fluid2geometry, fluid2material);
+				fluid2.position.set(11.45, 25, -2.44);
+				fluid2.material.opacity = 0.8;
+				scene.add(fluid2);
+
+				var fluid3geometry = new THREE.CylinderGeometry(0.805, 0.805, 7, 32);
+				var fluid3material = new THREE.MeshPhongMaterial( {
+						color: 0x673AB7,
+						ambient: 0x673AB7,
+						transparent: true,
+				});
+				var fluid3 = new THREE.Mesh(fluid3geometry, fluid3material);
+				fluid3.position.set(11.45, 19.5, -2.44);
+				fluid3.material.opacity = 0.6;
+				scene.add(fluid3);
+
+				var fluid4geometry = new THREE.CylinderGeometry(0.84, 0.3, 2.5, 32);
+				var fluid4material = new THREE.MeshPhongMaterial( {
+						color: 0x673AB7,
+						ambient: 0x673AB7,
+						transparent: true,
+				});
+				var fluid4 = new THREE.Mesh(fluid4geometry, fluid4material);
+				fluid4.position.set(11.45, 14.75, -2.44);
+				fluid4.material.opacity = 0.6;
+				scene.add(fluid4);
+				//***********END BURET******************
+				//************WATER*********************
+				cylinderGeometry = new THREE.CylinderGeometry(5.05, 5.05, 3, 32);
+				var cylinderMaterial = new THREE.MeshPhongMaterial( {
+					color: 0xB3E5FC,
+					ambient: 0xB3E5FC,
+					transparent: true,
+					//shading: THREE.SmoothShading
+				});
+				cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+				cylinder.position.set(12, 2.5, -3.07);
+				cylinder.material.opacity = 0.8;
+				scene.add(cylinder);
+				//********END WATER**********************
+				//**************TWEEN*************************
+				tween = new TWEEN.Tween(cylinder.material.color)
+					.to({r: 0.973, g: 0.733, b: 0.816 }, 500);
+				tween.easing(TWEEN.Easing.Quartic.In);
+				tween.delay(500);
+				tween.onUpdate(
+						function()
+						{
+							cylinder.material.color.setRGB(this.r, this.g, this.b);
+							//console.log(this.r*255 + " " + this.g*255 +  " " + this.b*255);
+						}
+					);
+				tweenBack = new TWEEN.Tween(cylinder.material.color)
+					.to({r:0.70196078431, g: 0.89803921568, b: 0.98823529411 }, 1000);
+				tweenBack.easing(TWEEN.Easing.Sinusoidal.In);
+				tweenBack.delay(500);
+				tweenBack.onUpdate(
+						function()
+						{
+							cylinder.material.color.setRGB(this.r, this.g, this.b);
+							//console.log(this.r*255 + " " + this.g*255 +  " " + this.b*255);
+						}
+					);
+				//************END TWEEN**************************
+
+			};
+
+		return function() {
+			setTimeout( createBox, 0 );
+		};
+	})();
+
+	render = function() {
+		requestAnimationFrame( render );
+		renderer.clear();
+		renderer.clearDepth();
+		renderer.render(scene2, camera);
+		//renderer.clearDepth();
+		renderer.render(scene, camera);
+		//renderer.clearDepth();
+		renderer.render(scene3, camera);
+		//render_stats.update();
+		controls.update();
+		TWEEN.update();
+
+	};
+
+	window.onload = initScene;
+
+	</script>
+</head>
+
+<body>
+
+		<!--<div id="heading">
+			<h1>Collisions</h1>
+			<p>Demonstrating the collision callback</p>
+		</div>-->
+		<!-- Top Navigation -->
+		<div id="charles" style="display:none">
+		</div>
+		<div id="reaction" style="position:absolute; top: 3em; background: none; padding: 1em;">
+		</div>
+		<div id="buret" style="position:absolute; top: 10em; background: none; padding: 1em;">
+		</div>
+		<div id="cylinder" style="position:absolute; top: 13em; background: none; padding: 1em;">
+		</div>
+		<div id="target" style="position:absolute; top: 1em; right: 1em; background: #009688; padding: 1em;">
+			<div style= "color: #000; weight: bold; font-size: 1.5em;">
+				<i class="fa fa-tint" aria-hidden="true"></i> +
+			</div>
+		</div>
+		<div id="target2" style="position:absolute; top: 6em; right: 1em; background: #009688; padding: 1em;">
+			<div style= "color: #000; weight: bold; font-size: 1.5em;">
+				<i class="fa fa-tint" aria-hidden="true"></i> -
+			</div>
+		</div>
+		<div>
+			<select class="cs-select cs-skin-elastic" id="selectMe">
+				<option value="" disabled selected>Select a Reaction</option>
+				<option value="france">KMnO<sub>4</sub> &amp; Fe<sup>2+</sup></option>
+				<option value="brazil">K<sub>2</sub>Cr<sub>2</sub>O<sub>7</sub> &amp; Sn<sup>2+</sup></option>
+				<option value="argentina">I<sub>2</sub> &amp; S<sub>2</sub>O<sub>3</sub><sup>2-</sup></option>
+			</select>
+		</div>
+		<div>
+			<span class="input input--madoka">
+				<input class="input__field input__field--madoka" type="text" id="input-31" />
+				<label class="input__label input__label--madoka" for="input-31">
+					<svg class="graphic graphic--madoka" width="100%" height="100%" viewBox="0 0 404 77" preserveAspectRatio="none">
+						<path d="m0,0l404,0l0,77l-404,0l0,-77z"/>
+					</svg>
+					<span class="input__label-content input__label-content--madoka">Set Molarity</span>
+				</label>
+			</span>
+		</div>
+		<div style="">
+			<span class="input2 input--madoka" style: "top: 100px;">
+				<input class="input__field input__field--madoka" type="text" id="input-32" />
+				<label class="input__label input__label--madoka" for="input-32">
+					<svg class="graphic graphic--madoka" width="100%" height="100%" viewBox="0 0 404 77" preserveAspectRatio="none">
+						<path d="m0,0l404,0l0,77l-404,0l0,-77z"/>
+					</svg>
+					<span class="input__label-content input__label-content--madoka">Guess Molarity</span>
+				</label>
+			</span>
+		</div>
+	<div id="viewport"></div>
+	<script src="js/classie.js"></script>
+	<script src="js/selectFx.js"></script>
+	<script>
+		(function() {
+			[].slice.call( document.querySelectorAll( 'select.cs-select' ) ).forEach( function(el) {
+				new SelectFx(el);
+			} );
+		})();
+	</script>
+	<script>
+		(function() {
+			// trim polyfill : https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim
+			if (!String.prototype.trim) {
+				(function() {
+					// Make sure we trim BOM and NBSP
+					var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+					String.prototype.trim = function() {
+						return this.replace(rtrim, '');
+					};
+				})();
+			}
+
+			[].slice.call( document.querySelectorAll( 'input.input__field' ) ).forEach( function( inputEl ) {
+				// in case the input is already filled..
+				if( inputEl.value.trim() !== '' ) {
+					classie.add( inputEl.parentNode, 'input--filled' );
+				}
+
+				// events:
+				inputEl.addEventListener( 'focus', onInputFocus );
+				inputEl.addEventListener( 'blur', onInputBlur );
+			} );
+
+			function onInputFocus( ev ) {
+				classie.add( ev.target.parentNode, 'input--filled' );
+			}
+
+			function onInputBlur( ev ) {
+				if( ev.target.value.trim() === '' ) {
+					classie.remove( ev.target.parentNode, 'input--filled' );
+				}
+			}
+		})();
+	</script>
+</body>
+
+</html>
