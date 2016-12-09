@@ -21,8 +21,8 @@
 
 	'use strict';
 
-	Physijs.scripts.worker = 'http://localhost:8080/js/physijs_worker.js';
-	Physijs.scripts.ammo = 'http://localhost:8080/js/ammo.js';
+	Physijs.scripts.worker = 'js/physijs_worker.js';
+	Physijs.scripts.ammo = 'js/ammo.js';
 
 	var initScene, render, _boxes = [], spawnBox, spawnSphere, deleteSphere, loader, createSphere,
 		renderer, render_stats, physics_stats, scene, scene2, scene3, ground_material, ground, light, camera, camera2, camera3, controls, materialA,
@@ -283,11 +283,11 @@
 		var box_geometry;
 		var buret_geometry;
 		var myLoader = new THREE.JSONLoader();
-		myLoader.load( "http://localhost:8080/beaker6.json", function(geometry, materials) {
+		myLoader.load( "beaker6.json", function(geometry, materials) {
 			box_geometry = geometry;
 			materialA = new THREE.MeshFaceMaterial(materials);
 		});
-		myLoader.load( "http://localhost:8080/buret.json", function(geometry, materials) {
+		myLoader.load( "buret.json", function(geometry, materials) {
 			buret_geometry = geometry;
 			//materialA = new THREE.MeshFaceMaterial(materials);
 		});
