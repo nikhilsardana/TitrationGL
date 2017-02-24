@@ -13,12 +13,14 @@ _____________
 
 - Movement of droplets
 
+- Controlling rate of drops
+
 - Tween between colors 
 
 <h2>What needs to be completed</h2>
 _________________________
 - Allow users to set molarity
 
-- Allow users to predict predict molarity
+- Allow users to guess molarity
 
 - Change colors to be accurate to set titration
