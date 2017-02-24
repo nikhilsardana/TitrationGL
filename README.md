@@ -3,6 +3,8 @@ Experimental WebGL Titration Demo
 
 This project uses the three.js library.
 
+View it <a href="https://nikhilsardana.github.io/TitrationGl/tgl/collisions">here</a>
+
 <h2>What works</h2>
 _____________
 - Mouse movement and controls
