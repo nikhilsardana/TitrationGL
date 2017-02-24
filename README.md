@@ -2,7 +2,7 @@
 Experimental WebGL Titration Demo
 This ThreeJS project is about halfway done.
 
-# What works
+<h2>What works</h2>
 _____________
 Mouse movement and controls
 Rendering of all objects using WebGL
