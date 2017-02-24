@@ -3,7 +3,7 @@ Experimental WebGL Titration Demo
 
 This project uses the three.js library.
 
-View it <a href="https://nikhilsardana.github.io/TitrationGl/tgl/collisions">here</a>
+View it <a href="https://nikhilsardana.github.io/TitrationGL/tgl/collisions">here</a>
 
 <h2>What works</h2>
 _____________
